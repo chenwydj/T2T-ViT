@@ -50,34 +50,46 @@ class T2T_module(nn.Module):
 
         if tokens_type == 'transformer':
             print('adopt transformer encoder for tokens-to-token')
-            self.soft_split0 = nn.Unfold(kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))
+            # self.soft_split0 = nn.Unfold(kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # TODO
             self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            # self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            # self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)) # TODO
+            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # TODO
 
-            self.attention1 = Token_transformer(dim=in_chans * 7 * 7, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
+            # self.attention1 = Token_transformer(dim=in_chans * 7 * 7, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
+            self.attention1 = Token_transformer(dim=token_dim * 3 * 3, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
             self.attention2 = Token_transformer(dim=token_dim * 3 * 3, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
             self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
 
         elif tokens_type == 'performer':
             print('adopt performer encoder for tokens-to-token')
-            self.soft_split0 = nn.Unfold(kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))
+            # self.soft_split0 = nn.Unfold(kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))
+            self.soft_split0 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # TODO
             self.soft_split1 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            # self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)) # TODO
 
-            #self.attention1 = Token_performer(dim=token_dim, in_dim=in_chans*7*7, kernel_ratio=0.5)
-            #self.attention2 = Token_performer(dim=token_dim, in_dim=token_dim*3*3, kernel_ratio=0.5)
-            self.attention1 = Token_performer(dim=in_chans*7*7, in_dim=token_dim, kernel_ratio=0.5)
+            # self.attention1 = Token_performer(dim=token_dim, in_dim=in_chans*7*7, kernel_ratio=0.5) # commented
+            # self.attention2 = Token_performer(dim=token_dim, in_dim=token_dim*3*3, kernel_ratio=0.5) # commented
+            # self.attention1 = Token_performer(dim=in_chans*7*7, in_dim=token_dim, kernel_ratio=0.5)
+            self.attention1 = Token_performer(dim=in_chans*3*3, in_dim=token_dim, kernel_ratio=0.5) # TODO
             self.attention2 = Token_performer(dim=token_dim*3*3, in_dim=token_dim, kernel_ratio=0.5)
             self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
 
         elif tokens_type == 'convolution':  # just for comparison with conolution, not our model
             # for this tokens type, you need change forward as three convolution operation
             print('adopt convolution layers for tokens-to-token')
-            self.soft_split0 = nn.Conv2d(3, token_dim, kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))  # the 1st convolution
+            # self.soft_split0 = nn.Conv2d(3, token_dim, kernel_size=(7, 7), stride=(4, 4), padding=(2, 2))  # the 1st convolution
+            self.soft_split0 = nn.Conv2d(token_dim, token_dim, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # the 1st convolution # TODO
             self.soft_split1 = nn.Conv2d(token_dim, token_dim, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # the 2nd convolution
-            self.project = nn.Conv2d(token_dim, embed_dim, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # the 3rd convolution
+            # self.project = nn.Conv2d(token_dim, embed_dim, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # the 3rd convolution
+            # self.project = nn.Conv2d(token_dim, embed_dim, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)) # the 3rd convolution # TODO
+            self.project = nn.Conv2d(token_dim, embed_dim, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # the 3rd convolution # TODO
 
-        self.num_patches = (img_size // (4 * 2 * 2)) * (img_size // (4 * 2 * 2))  # there are 3 sfot split, stride are 4,2,2 seperately
+        # self.num_patches = (img_size // (4 * 2 * 2)) * (img_size // (4 * 2 * 2))  # there are 3 sfot split, stride are 4,2,2 seperately
+        self.num_patches = (img_size // (2 * 2 * 1)) * (img_size // (2 * 2 * 1))  # there are 3 sfot split, stride are 4,2,2 seperately # TODO
+        # self.num_patches = (img_size // (2 * 2 * 2)) * (img_size // (2 * 2 * 2))  # there are 3 sfot split, stride are 4,2,2 seperately # TODO
 
     def forward(self, x):
         # step0: soft split

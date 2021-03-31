@@ -32,8 +32,25 @@ from timm.optim import create_optimizer
 from timm.scheduler import create_scheduler
 from timm.utils import ApexScaler, NativeScaler
 
+from thop_modified import profile
+from pdb import set_trace as bp
+
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('train')
+
+
+def count_matmul(m, x, y):
+    num_mul = x[0].numel() * x[1].size(-1)
+    m.total_ops += torch.DoubleTensor([int(num_mul)])
+
+class matmul(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x1, x2):
+        x = x1@x2
+        return x
+
 
 # The first arg parser parses out only the --config argument, this argument is used to
 # load a yaml file containing key-values that override the defaults for the main parser below
@@ -316,6 +333,11 @@ def main():
         bn_eps=args.bn_eps,
         checkpoint_path=args.initial_checkpoint,
         img_size=args.img_size)
+
+    if args.local_rank == 0:
+        bp()
+    else:
+        exit(0)
 
     if args.local_rank == 0:
         _logger.info('Model %s created, param count: %d' %

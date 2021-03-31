@@ -5,6 +5,14 @@ import math
 import torch
 import torch.nn as nn
 
+class matmul(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x1, x2):
+        x = x1@x2
+        return x
+
 class Token_performer(nn.Module):
     def __init__(self, dim, in_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2 = 0.1):
         super().__init__()
@@ -28,6 +36,8 @@ class Token_performer(nn.Module):
         self.w = torch.randn(self.m, self.emb)
         self.w = nn.Parameter(nn.init.orthogonal_(self.w) * math.sqrt(self.m), requires_grad=False)
 
+        self.mat = matmul()
+
     def prm_exp(self, x):
         # part of the function is borrow from https://github.com/lucidrains/performer-pytorch 
         # and Simo Ryu (https://github.com/cloneofsimo)
@@ -46,8 +56,10 @@ class Token_performer(nn.Module):
         k, q, v = torch.split(self.kqv(x), self.emb, dim=-1)
         kp, qp = self.prm_exp(k), self.prm_exp(q)  # (B, T, m), (B, T, m)
         D = torch.einsum('bti,bi->bt', qp, kp.sum(dim=1)).unsqueeze(dim=2)  # (B, T, m) * (B, m) -> (B, T, 1)
-        kptv = torch.einsum('bin,bim->bnm', v.float(), kp)  # (B, emb, m)
-        y = torch.einsum('bti,bni->btn', qp, kptv) / (D.repeat(1, 1, self.emb) + self.epsilon)  # (B, T, emb)/Diag
+        # kptv = torch.einsum('bin,bim->bnm', v.float(), kp)  # (B, emb, m)
+        # y = torch.einsum('bti,bni->btn', qp, kptv) / (D.repeat(1, 1, self.emb) + self.epsilon)  # (B, T, emb)/Diag
+        kptv = self.mat(v.float().transpose(-2, -1), kp)  # (B, emb, m) TODO
+        y = self.mat(qp, kptv.transpose(-2, -1)) / (D.repeat(1, 1, self.emb) + self.epsilon)  # (B, T, emb)/Diag TODO
         # skip connection
         y = v + self.dp(self.proj(y))  # same as token_transformer in T2T layer, use v as skip connection
 

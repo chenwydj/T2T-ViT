@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from timm.models.layers import DropPath
+from models.t2t_vit import matmul
 
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
@@ -42,16 +43,20 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
+        self.mat = matmul()
+
     def forward(self, x):
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
+        # attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = (self.mat(q, k.transpose(-2, -1))) * self.scale # TODO
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        # x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = out = self.mat(attn, v).transpose(1, 2).reshape(B, N, C) # TODO
         x = self.proj(x)
         x = self.proj_drop(x)
         return x

@@ -18,6 +18,7 @@ from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
 import models
+from models.t2t_vit import matmul
 
 import torch
 import torch.nn as nn
@@ -42,14 +43,6 @@ _logger = logging.getLogger('train')
 def count_matmul(m, x, y):
     num_mul = x[0].numel() * x[1].size(-1)
     m.total_ops += torch.DoubleTensor([int(num_mul)])
-
-class matmul(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x1, x2):
-        x = x1@x2
-        return x
 
 
 # The first arg parser parses out only the --config argument, this argument is used to
@@ -333,6 +326,8 @@ def main():
         bn_eps=args.bn_eps,
         checkpoint_path=args.initial_checkpoint,
         img_size=args.img_size)
+
+    flops, params = profile(model, inputs=(torch.randn(1, 3, args.img_size, args.img_size),), custom_ops={matmul: count_matmul}, verbose=False)
 
     if args.local_rank == 0:
         bp()

@@ -4,14 +4,9 @@ Take Performer as T2T Transformer
 import math
 import torch
 import torch.nn as nn
+from models.t2t_vit import matmul
+from pdb import set_trace as bp
 
-class matmul(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x1, x2):
-        x = x1@x2
-        return x
 
 class Token_performer(nn.Module):
     def __init__(self, dim, in_dim, head_cnt=1, kernel_ratio=0.5, dp1=0.1, dp2 = 0.1):

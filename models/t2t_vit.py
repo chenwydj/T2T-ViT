@@ -9,6 +9,14 @@ T2T-ViT
 import torch
 import torch.nn as nn
 
+class matmul(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x1, x2):
+        x = x1@x2
+        return x
+
 from timm.models.helpers import load_pretrained
 from timm.models.registry import register_model
 from timm.models.layers import trunc_normal_
@@ -16,6 +24,7 @@ import numpy as np
 from .token_transformer import Token_transformer
 from .token_performer import Token_performer
 from .transformer_block import Block, get_sinusoid_encoding
+from pdb import set_trace as bp
 
 def _cfg(url='', **kwargs):
     return {
@@ -58,7 +67,7 @@ class T2T_module(nn.Module):
             self.soft_split2 = nn.Unfold(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)) # TODO
 
             # self.attention1 = Token_transformer(dim=in_chans * 7 * 7, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
-            self.attention1 = Token_transformer(dim=token_dim * 3 * 3, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
+            self.attention1 = Token_transformer(dim=in_chans * 3 * 3, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
             self.attention2 = Token_transformer(dim=token_dim * 3 * 3, in_dim=token_dim, num_heads=1, mlp_ratio=1.0)
             self.project = nn.Linear(token_dim * 3 * 3, embed_dim)
 
